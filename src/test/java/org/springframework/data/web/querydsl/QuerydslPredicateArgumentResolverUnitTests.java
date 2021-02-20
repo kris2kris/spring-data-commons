@@ -58,6 +58,7 @@ import com.querydsl.core.types.dsl.BooleanExpression;
  * @author Christoph Strobl
  * @author Oliver Gierke
  * @author Mark Paluch
+ * @author Christophe Gilles
  */
 class QuerydslPredicateArgumentResolverUnitTests {
 
@@ -104,6 +105,40 @@ class QuerydslPredicateArgumentResolverUnitTests {
 				new ServletWebRequest(request), null);
 
 		assertThat(predicate).isEqualTo(QUser.user.firstname.eq("rand"));
+	}
+
+	@Test
+	void resolveArgumentShouldCreateSingleStringParameterAndSingleNotPredicateCorrectly() throws Exception {
+
+		request.addParameter("firstname", "rand");
+		request.addParameter("firstname.not", "rand");
+
+		Object predicate = resolver.resolveArgument(getMethodParameterFor("simpleFind", Predicate.class), null,
+				new ServletWebRequest(request), null);
+
+		assertThat(predicate).isEqualTo(QUser.user.firstname.eq("rand").and(QUser.user.firstname.eq("rand").not()));
+	}
+
+	@Test
+	void resolveArgumentShouldCreateSingleStringParameterNotPredicateCorrectly() throws Exception {
+
+		request.addParameter("firstname.not", "rand");
+
+		Object predicate = resolver.resolveArgument(getMethodParameterFor("simpleFind", Predicate.class), null,
+				new ServletWebRequest(request), null);
+
+		assertThat(predicate).isEqualTo(QUser.user.firstname.eq("rand").not());
+	}
+
+	@Test
+	void resolveArgumentShouldCreateSingleStringParameterNotUppercasePredicateCorrectly() throws Exception {
+
+		request.addParameter("firstname.NOT", "rand");
+
+		Object predicate = resolver.resolveArgument(getMethodParameterFor("simpleFind", Predicate.class), null,
+				new ServletWebRequest(request), null);
+
+		assertThat(predicate).isEqualTo(QUser.user.firstname.eq("rand").not());
 	}
 
 	@Test // DATACMNS-669

@@ -47,6 +47,7 @@ import com.querydsl.core.types.Predicate;
  * @author Christoph Strobl
  * @author Oliver Gierke
  * @author Mark Paluch
+ * @author Christophe Gilles
  * @since 1.11
  */
 public class QuerydslPredicateBuilder {
@@ -96,11 +97,13 @@ public class QuerydslPredicateBuilder {
 
 		for (Entry<String, List<String>> entry : values.entrySet()) {
 
+			boolean isNot = entry.getKey().toLowerCase().endsWith(".not");
+
 			if (isSingleElementCollectionWithoutText(entry.getValue())) {
 				continue;
 			}
 
-			String path = entry.getKey();
+			String path = isNot ? entry.getKey().substring(0, entry.getKey().length() - 4) : entry.getKey();
 
 			if (!bindings.isPathAvailable(path, type)) {
 				continue;
@@ -115,7 +118,13 @@ public class QuerydslPredicateBuilder {
 			Collection<Object> value = convertToPropertyPathSpecificType(entry.getValue(), propertyPath);
 			Optional<Predicate> predicate = invokeBinding(propertyPath, bindings, value);
 
-			predicate.ifPresent(builder::and);
+			predicate.ifPresent(p -> {
+				if (isNot) {
+					builder.andNot(p);
+				} else {
+					builder.and(p);
+				}
+			});
 		}
 
 		return builder.getValue();
